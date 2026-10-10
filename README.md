@@ -10,9 +10,14 @@ Listas de deseos de la familia, sin inicio de sesión y pensadas para móvil
 
 El perfil elegido se guarda en el móvil (localStorage).
 
+## Base de datos
+
+La base de datos y las fotos están en el proyecto de Supabase **"lego-inventory"**.
+La URL y la anon key de ese proyecto son las que van en `.env.local` y en Vercel.
+
 ## Puesta en marcha
 
-1. Crea un proyecto en [Supabase](https://supabase.com) y ejecuta **solo**
+1. En el proyecto de [Supabase](https://supabase.com) ("lego-inventory") ejecuta **solo**
    `supabase/instalar.sql` en el SQL Editor (New query → pegar todo → Run).
    Monta todo: tablas `perfiles` y `regalos`, los 5 perfiles iniciales, la migración de
    regalos antiguos, las políticas RLS, el tiempo real y el bucket público `fotos`.

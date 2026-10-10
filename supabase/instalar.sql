@@ -144,3 +144,14 @@ drop policy if exists "fotos borrar" on storage.objects;
 create policy "fotos leer"   on storage.objects for select to anon, authenticated using (bucket_id = 'fotos');
 create policy "fotos subir"  on storage.objects for insert to anon, authenticated with check (bucket_id = 'fotos');
 create policy "fotos borrar" on storage.objects for delete to anon, authenticated using (bucket_id = 'fotos');
+
+
+-- ============ 6. Permisos de la API ============
+-- RLS (arriba) decide qué filas se pueden tocar; estos GRANT dan acceso
+-- a las tablas a los roles que usa la app sin login.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.perfiles to anon, authenticated;
+grant select, insert, update, delete on public.regalos  to anon, authenticated;
+
+-- Que la API de Supabase (PostgREST) vea los cambios al momento
+notify pgrst, 'reload schema';
