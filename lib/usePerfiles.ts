@@ -14,7 +14,7 @@ export function usePerfiles() {
     if (!supabase) return;
     const { data, error } = await supabase
       .from("perfiles")
-      .select("id, nombre, color, foto_url, orden")
+      .select("id, nombre, color, orden")
       .order("orden")
       .order("created_at");
     if (error) setError(error.message);

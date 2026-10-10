@@ -4,7 +4,7 @@ Listas de deseos de la familia, sin inicio de sesión y pensadas para móvil
 (Next.js App Router + Supabase). Se puede instalar como app (PWA).
 
 - **Perfiles personales** (Norma, Martina, Edu, Papá, Mamá al empezar): cada uno ve solo
-  su lista y puede añadir y borrar regalos. Nombre, color y foto se editan desde
+  su lista y puede añadir y borrar regalos. Nombre y color se editan desde
   "¿Quién eres?" → "Editar perfiles".
 - **Familia**: ve las listas de todos, con filtro por persona. Solo lectura y no se edita.
 

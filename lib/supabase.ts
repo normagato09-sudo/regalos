@@ -4,7 +4,6 @@ export type Perfil = {
   id: string;
   nombre: string;
   color: string;
-  foto_url: string | null;
   orden: number;
 };
 

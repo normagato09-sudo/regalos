@@ -91,7 +91,7 @@ button { cursor: pointer; }
 .profile:disabled:hover { border-color: var(--line); }
 .profile-name { overflow-wrap: anywhere; text-align: center; }
 
-/* Foto de perfil redonda (o inicial sobre su color) */
+/* Avatar redondo: inicial sobre el color del perfil */
 .avatar {
   flex: none;
   border-radius: 50%;
@@ -103,7 +103,6 @@ button { cursor: pointer; }
   line-height: 1;
   user-select: none;
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .family-avatar { background: var(--placeholder); font-size: 2rem; }
 
 .avatar-wrap { position: relative; display: inline-block; }
@@ -127,15 +126,7 @@ button { cursor: pointer; }
 
 /* ---------- Editar perfil ---------- */
 .edit-profile { max-width: 440px; margin: 0 auto; }
-.edit-photo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 22px;
-}
-.edit-photo-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.edit-photo-actions .btn-primary { width: auto; padding: 10px 22px; }
+.edit-preview { display: flex; justify-content: center; margin-bottom: 22px; }
 .field-label { font-size: 0.88rem; font-weight: 600; }
 .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
 .swatch {
