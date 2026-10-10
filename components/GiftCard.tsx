@@ -1,15 +1,17 @@
 "use client";
 
-import type { Regalo } from "@/lib/supabase";
+import type { Perfil, Regalo } from "@/lib/supabase";
+import Avatar from "./Avatar";
 import { GiftIcon, TrashIcon } from "./icons";
 
 type Props = {
   regalo: Regalo;
-  showOwner?: boolean;
+  // En Familia: de quién es el regalo
+  owner?: Perfil;
   onDelete?: (r: Regalo) => void;
 };
 
-export default function GiftCard({ regalo, showOwner, onDelete }: Props) {
+export default function GiftCard({ regalo, owner, onDelete }: Props) {
   return (
     <article className="card">
       {regalo.foto_url ? (
@@ -27,7 +29,12 @@ export default function GiftCard({ regalo, showOwner, onDelete }: Props) {
       )}
 
       <div className="body">
-        {showOwner && <div className="owner">Lo quiere {regalo.persona}</div>}
+        {owner && (
+          <div className="owner">
+            <Avatar perfil={owner} size={22} />
+            <span>Lo quiere {owner.nombre}</span>
+          </div>
+        )}
         <div className="name">{regalo.nombre}</div>
         {regalo.nota && <div className="note">{regalo.nota}</div>}
         <div className="spacer" />

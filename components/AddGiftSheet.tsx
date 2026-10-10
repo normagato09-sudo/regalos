@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupabase, type Persona } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Props = {
-  persona: Persona;
+  perfilId: string;
   onClose: () => void;
 };
 
@@ -31,7 +31,7 @@ function normalizeUrl(raw: string): string | null {
   return /^https?:\/\//i.test(s) ? s : `https://${s}`;
 }
 
-export default function AddGiftSheet({ persona, onClose }: Props) {
+export default function AddGiftSheet({ perfilId, onClose }: Props) {
   const [nombre, setNombre] = useState("");
   const [enlace, setEnlace] = useState("");
   const [nota, setNota] = useState("");
@@ -82,7 +82,7 @@ export default function AddGiftSheet({ persona, onClose }: Props) {
         enlace: normalizeUrl(enlace),
         nota: nota.trim() || null,
         foto_url,
-        persona,
+        perfil_id: perfilId,
       });
       if (insErr) throw insErr;
       onClose();

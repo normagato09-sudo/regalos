@@ -2,79 +2,134 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AddGiftSheet from "@/components/AddGiftSheet";
+import Avatar from "@/components/Avatar";
+import EditProfile from "@/components/EditProfile";
 import GiftCard from "@/components/GiftCard";
 import ProfilePicker from "@/components/ProfilePicker";
 import { GiftIcon } from "@/components/icons";
-import { getSupabase, PERFILES, PERSONAS, type Perfil, type Persona, type Regalo } from "@/lib/supabase";
+import { getSupabase, storagePath, type Perfil, type Regalo } from "@/lib/supabase";
+import { usePerfiles } from "@/lib/usePerfiles";
 
 const STORAGE_KEY = "posibles-regalos:perfil";
+const FAMILIA = "familia";
 
-function readPerfil(): Perfil | null {
+// Guarda el id del perfil (o "familia"). Versiones antiguas guardaban el nombre.
+function readSeleccion(): string | null {
   try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return v && (PERFILES as string[]).includes(v) ? (v as Perfil) : null;
+    return localStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
   }
 }
 
-function savePerfil(p: Perfil | null) {
+function saveSeleccion(v: string | null) {
   try {
-    if (p) localStorage.setItem(STORAGE_KEY, p);
+    if (v) localStorage.setItem(STORAGE_KEY, v);
     else localStorage.removeItem(STORAGE_KEY);
   } catch {
     /* sin almacenamiento: se elige cada vez */
   }
 }
 
-// Ruta del archivo dentro del bucket a partir de su URL pública.
-function storagePath(url: string): string | null {
-  const marker = "/storage/v1/object/public/fotos/";
-  const i = url.indexOf(marker);
-  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length));
-}
-
 export default function Home() {
+  const { perfiles, cargando, error, aplicar } = usePerfiles();
   const [ready, setReady] = useState(false);
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [seleccion, setSeleccion] = useState<string | null>(null);
+  const [editandoPerfiles, setEditandoPerfiles] = useState(false);
+  const [perfilEnEdicion, setPerfilEnEdicion] = useState<string | null>(null);
 
   useEffect(() => {
-    setPerfil(readPerfil());
+    const v = readSeleccion();
+    setSeleccion(v === "Familia" ? FAMILIA : v);
     setReady(true);
   }, []);
 
-  const elegir = (p: Perfil | null) => {
-    savePerfil(p);
-    setPerfil(p);
+  const elegir = useCallback((v: string | null) => {
+    saveSeleccion(v);
+    setSeleccion(v);
+    setEditandoPerfiles(false);
     window.scrollTo(0, 0);
-  };
+  }, []);
+
+  // Perfil elegido (por id, o por nombre si viene de la versión anterior)
+  const perfil = useMemo(
+    () =>
+      seleccion && seleccion !== FAMILIA
+        ? perfiles.find((p) => p.id === seleccion) ?? perfiles.find((p) => p.nombre === seleccion) ?? null
+        : null,
+    [perfiles, seleccion],
+  );
+
+  useEffect(() => {
+    if (cargando || !seleccion || seleccion === FAMILIA) return;
+    if (perfil && perfil.id !== seleccion) elegir(perfil.id); // migra nombre → id
+    else if (!perfil && !error && getSupabase()) elegir(null); // ya no existe
+  }, [cargando, seleccion, perfil, error, elegir]);
+
+  const enEdicion = perfilEnEdicion ? perfiles.find((p) => p.id === perfilEnEdicion) : undefined;
 
   if (!ready) return <main className="wrap" />;
 
-  return (
-    <main className="wrap">
-      {perfil ? (
-        <Lista perfil={perfil} onCambiar={() => elegir(null)} />
-      ) : (
-        <ProfilePicker onPick={elegir} />
-      )}
-    </main>
-  );
+  let contenido: React.ReactNode;
+  if (enEdicion) {
+    contenido = (
+      <EditProfile
+        key={enEdicion.id}
+        perfil={enEdicion}
+        onSaved={(p) => {
+          aplicar(p);
+          setPerfilEnEdicion(null);
+        }}
+        onCancel={() => setPerfilEnEdicion(null)}
+      />
+    );
+  } else if (seleccion === FAMILIA) {
+    contenido = <Lista perfiles={perfiles} onCambiar={() => elegir(null)} />;
+  } else if (perfil) {
+    contenido = <Lista perfil={perfil} perfiles={perfiles} onCambiar={() => elegir(null)} />;
+  } else if (seleccion && cargando) {
+    contenido = <div className="empty-state">Cargando…</div>;
+  } else {
+    contenido = (
+      <ProfilePicker
+        perfiles={perfiles}
+        cargando={cargando}
+        error={error}
+        configurado={!!getSupabase()}
+        onPick={elegir}
+        onEdit={(p) => setPerfilEnEdicion(p.id)}
+        editando={editandoPerfiles}
+        onToggleEdit={() => setEditandoPerfiles((v) => !v)}
+      />
+    );
+  }
+
+  return <main className="wrap">{contenido}</main>;
 }
 
-function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void }) {
+type ListaProps = {
+  // Sin perfil = vista Familia (solo lectura)
+  perfil?: Perfil;
+  perfiles: Perfil[];
+  onCambiar: () => void;
+};
+
+function Lista({ perfil, perfiles, onCambiar }: ListaProps) {
   const supabase = getSupabase();
-  const esFamilia = perfil === "Familia";
+  const esFamilia = !perfil;
+  const perfilId = perfil?.id ?? null;
   const [regalos, setRegalos] = useState<Regalo[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<Persona | "Todos">("Todos");
+  const [filtro, setFiltro] = useState<string>("todos");
   const [añadiendo, setAñadiendo] = useState(false);
+
+  const porId = useMemo(() => new Map(perfiles.map((p) => [p.id, p])), [perfiles]);
 
   const cargar = useCallback(async () => {
     if (!supabase) return;
     let q = supabase.from("regalos").select("*").order("created_at", { ascending: false });
-    if (!esFamilia) q = q.eq("persona", perfil);
+    if (perfilId) q = q.eq("perfil_id", perfilId);
     const { data, error } = await q;
     if (error) setError(error.message);
     else {
@@ -82,7 +137,7 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
       setRegalos((data ?? []) as Regalo[]);
     }
     setCargando(false);
-  }, [supabase, esFamilia, perfil]);
+  }, [supabase, perfilId]);
 
   useEffect(() => {
     if (!supabase) {
@@ -93,11 +148,11 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
     cargar();
 
     const canal = supabase
-      .channel(`regalos-${perfil}`)
+      .channel(`regalos-${perfilId ?? FAMILIA}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "regalos" }, (payload) => {
         if (payload.eventType === "INSERT") {
           const nuevo = payload.new as Regalo;
-          if (!esFamilia && nuevo.persona !== perfil) return;
+          if (perfilId && nuevo.perfil_id !== perfilId) return;
           setRegalos((prev) => (prev.some((r) => r.id === nuevo.id) ? prev : [nuevo, ...prev]));
         } else if (payload.eventType === "DELETE") {
           const id = (payload.old as Partial<Regalo>).id;
@@ -116,10 +171,10 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
       document.removeEventListener("visibilitychange", alVolver);
       supabase.removeChannel(canal);
     };
-  }, [supabase, perfil, esFamilia, cargar]);
+  }, [supabase, perfilId, cargar]);
 
   const visibles = useMemo(
-    () => (esFamilia && filtro !== "Todos" ? regalos.filter((r) => r.persona === filtro) : regalos),
+    () => (esFamilia && filtro !== "todos" ? regalos.filter((r) => r.perfil_id === filtro) : regalos),
     [regalos, esFamilia, filtro],
   );
 
@@ -138,6 +193,8 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
     if (path) await supabase.storage.from("fotos").remove([path]);
   }
 
+  const filtroPerfil = filtro !== "todos" ? porId.get(filtro) : undefined;
+
   return (
     <>
       <div className="topbar">
@@ -145,28 +202,35 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
       </div>
 
       <header className="header">
-        <h1>{esFamilia ? "Posibles regalos" : `Hola, ${perfil}`}</h1>
-        <p>{esFamilia ? "Lo que le gustaría a cada uno" : "Tu lista de deseos"}</p>
+        {perfil && (
+          <div className="header-avatar">
+            <Avatar perfil={perfil} size={72} />
+          </div>
+        )}
+        <h1>{perfil ? `Hola, ${perfil.nombre}` : "Posibles regalos"}</h1>
+        <p>{perfil ? "Tu lista de deseos" : "Lo que le gustaría a cada uno"}</p>
       </header>
 
-      {!supabase && (
-        <div className="notice">
-          Falta configurar Supabase: copia <code>.env.local.example</code> a <code>.env.local</code> y
-          rellena <code>NEXT_PUBLIC_SUPABASE_URL</code> y <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
-        </div>
-      )}
       {error && <div className="notice">No se pudo cargar la lista: {error}</div>}
 
       {esFamilia && (
         <nav className="filters" aria-label="Filtrar por persona">
-          {(["Todos", ...PERSONAS] as const).map((p) => (
+          <button
+            className={`chip${filtro === "todos" ? " active" : ""}`}
+            onClick={() => setFiltro("todos")}
+            aria-pressed={filtro === "todos"}
+          >
+            Todos
+          </button>
+          {perfiles.map((p) => (
             <button
-              key={p}
-              className={`chip${filtro === p ? " active" : ""}`}
-              onClick={() => setFiltro(p)}
-              aria-pressed={filtro === p}
+              key={p.id}
+              className={`chip chip-avatar${filtro === p.id ? " active" : ""}`}
+              onClick={() => setFiltro(p.id)}
+              aria-pressed={filtro === p.id}
             >
-              {p}
+              <Avatar perfil={p} size={22} />
+              {p.nombre}
             </button>
           ))}
         </nav>
@@ -179,9 +243,9 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
           <div className="big"><GiftIcon size={48} /></div>
           <p>
             {esFamilia
-              ? filtro === "Todos"
-                ? "Todavía nadie ha añadido regalos."
-                : `${filtro} todavía no ha añadido regalos.`
+              ? filtroPerfil
+                ? `${filtroPerfil.nombre} todavía no ha añadido regalos.`
+                : "Todavía nadie ha añadido regalos."
               : "Aún no tienes regalos. ¡Añade el primero!"}
           </p>
         </div>
@@ -191,22 +255,22 @@ function Lista({ perfil, onCambiar }: { perfil: Perfil; onCambiar: () => void })
             <GiftCard
               key={r.id}
               regalo={r}
-              showOwner={esFamilia}
+              owner={esFamilia ? porId.get(r.perfil_id) : undefined}
               onDelete={esFamilia ? undefined : borrar}
             />
           ))}
         </section>
       )}
 
-      {!esFamilia && supabase && (
+      {perfil && supabase && (
         <div className="fab-bar">
           <button className="btn-primary" onClick={() => setAñadiendo(true)}>+ Añadir regalo</button>
         </div>
       )}
 
-      {añadiendo && !esFamilia && (
+      {añadiendo && perfil && (
         <AddGiftSheet
-          persona={perfil}
+          perfilId={perfil.id}
           onClose={() => {
             setAñadiendo(false);
             cargar();

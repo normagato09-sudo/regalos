@@ -86,14 +86,67 @@ button { cursor: pointer; }
 }
 .profile:hover { border-color: var(--accent); }
 .profile:active { transform: scale(0.97); }
-.profile .avatar {
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--placeholder);
-  font-size: 1.6rem;
-}
 .profile.familia { grid-column: 1 / -1; }
+.profile:disabled { opacity: 0.45; cursor: default; }
+.profile:disabled:hover { border-color: var(--line); }
+.profile-name { overflow-wrap: anywhere; text-align: center; }
+
+/* Foto de perfil redonda (o inicial sobre su color) */
+.avatar {
+  flex: none;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.family-avatar { background: var(--placeholder); font-size: 2rem; }
+
+.avatar-wrap { position: relative; display: inline-block; }
+.pencil {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.pencil svg { width: 26px; height: 26px; }
+.profiles.editing .profile:not(:disabled) { border-color: var(--accent); }
+
+.edit-toggle { display: flex; justify-content: center; margin-top: 22px; }
+.edit-toggle .btn-primary { width: auto; min-width: 140px; padding: 10px 24px; }
+.edit-toggle .link-btn { padding: 9px 20px; font-size: 0.95rem; }
+
+.header-avatar { display: flex; justify-content: center; margin-bottom: 10px; }
+
+/* ---------- Editar perfil ---------- */
+.edit-profile { max-width: 440px; margin: 0 auto; }
+.edit-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.edit-photo-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.edit-photo-actions .btn-primary { width: auto; padding: 10px 22px; }
+.field-label { font-size: 0.88rem; font-weight: 600; }
+.swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--line);
+  padding: 0;
+}
+.swatch.selected { box-shadow: 0 0 0 3px var(--text); }
 
 /* ---------- Filtros ---------- */
 .filters {
@@ -112,6 +165,14 @@ button { cursor: pointer; }
   padding: 7px 14px;
   font-size: 0.92rem;
 }
+.chip-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 5px;
+}
+.chip-avatar .avatar { font-size: 0.7rem !important; }
+.chip.active .avatar { box-shadow: 0 0 0 2px #fff; }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* ---------- Cuadrícula ---------- */
@@ -155,7 +216,13 @@ button { cursor: pointer; }
   font-size: 0.78rem;
   color: var(--accent);
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
+.card .owner span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .owner .avatar { font-size: 0.7rem !important; }
 .card .name {
   font-weight: 700;
   font-size: 0.98rem;
