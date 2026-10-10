@@ -12,10 +12,12 @@ El perfil elegido se guarda en el móvil (localStorage).
 
 ## Puesta en marcha
 
-1. Crea un proyecto en [Supabase](https://supabase.com) y ejecuta en el SQL Editor, en este orden:
-   - `supabase/schema.sql`: tabla `regalos`, políticas RLS, tiempo real y bucket público `fotos`.
-   - `supabase/perfiles.sql`: tabla `perfiles` con los perfiles iniciales y relación
-     regalo → perfil por id (migra los regalos existentes; no borra nada y se puede repetir).
+1. Crea un proyecto en [Supabase](https://supabase.com) y ejecuta **solo**
+   `supabase/instalar.sql` en el SQL Editor (New query → pegar todo → Run).
+   Monta todo: tablas `perfiles` y `regalos`, los 5 perfiles iniciales, la migración de
+   regalos antiguos, las políticas RLS, el tiempo real y el bucket público `fotos`.
+   Funciona en un proyecto vacío o sobre una instalación anterior, no borra datos y se
+   puede ejecutar varias veces.
 2. Copia `.env.local.example` a `.env.local` y rellena la URL y la anon key
    (Project Settings → API).
 3. `npm install` y `npm run dev`.
